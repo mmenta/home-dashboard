@@ -1,0 +1,56 @@
+# Full public stack: dashboard + Authelia (login wall) + SWAG (TLS reverse proxy).
+# Your existing DuckDNS container keeps the DNS record pointed at your home IP;
+# SWAG gets the TLS cert via DuckDNS DNS validation.
+#
+# Run from this deploy/ folder on the server:  docker compose up -d --build
+# Secrets come from a .env file in this folder (see .env.example). They are
+# never baked into the image.
+
+services:
+  home-dashboard:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: home-dashboard
+    environment:
+      # IP of your Home Assistant VM on the LAN (Settings -> System -> Network in HA).
+      - HA_BASE_URL=http://HOME_ASSISTANT_VM_IP:8123
+      - HA_TOKEN=${HA_TOKEN}
+      - TRUST_AUTH_HEADER=true
+      - PORT=8080
+    networks: [proxy]
+    restart: unless-stopped
+
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+    volumes:
+      - ./authelia:/config
+    environment:
+      - TZ=America/Los_Angeles
+    networks: [proxy]
+    restart: unless-stopped
+
+  swag:
+    image: lscr.io/linuxserver/swag:latest
+    container_name: swag
+    cap_add: [NET_ADMIN]
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles
+      - URL=YOURNAME.duckdns.org          # <-- your DuckDNS subdomain
+      - VALIDATION=duckdns
+      - DUCKDNSTOKEN=${DUCKDNS_TOKEN}      # <-- from .env
+      - ONLY_SUBDOMAINS=false
+    volumes:
+      - ./swag:/config
+    ports:
+      - "80:80"
+      - "443:443"
+    networks: [proxy]
+    restart: unless-stopped
+
+networks:
+  proxy:
+    name: proxy

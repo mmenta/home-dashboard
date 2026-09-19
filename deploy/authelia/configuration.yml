@@ -1,5 +1,6 @@
-# Authelia config. Replace YOURNAME and the three *_SECRET values before first run.
-# Generate each secret with:  docker run --rm authelia/authelia:latest authelia crypto rand --length 64
+# Authelia for *.experimenta.cc. Served at the root of auth.experimenta.cc (SWAG.s
+# snippets expect that path). Only the trading dashboards are gated; the other
+# apps carry their own login. Secrets are filled in at bootstrap.
 theme: dark
 
 server:
@@ -9,11 +10,11 @@ log:
   level: info
 
 totp:
-  issuer: YOURNAME.duckdns.org
+  issuer: experimenta.cc
 
 identity_validation:
   reset_password:
-    jwt_secret: REPLACE_WITH_RANDOM_SECRET_1
+    jwt_secret: REPLACE_WITH_RANDOM_HEX64
 
 authentication_backend:
   file:
@@ -22,18 +23,22 @@ authentication_backend:
 access_control:
   default_policy: deny
   rules:
-    # Require username + password + 2FA (TOTP) for the whole dashboard.
-    - domain: YOURNAME.duckdns.org
+    - domain:
+        - kalshi.experimenta.cc
+        - polyview.experimenta.cc
+        - crossarb.experimenta.cc
+        - weather.experimenta.cc
       policy: two_factor
 
 session:
-  secret: REPLACE_WITH_RANDOM_SECRET_2
+  secret: REPLACE_WITH_RANDOM_HEX64
   cookies:
     - name: authelia_session
-      domain: YOURNAME.duckdns.org
-      authelia_url: https://YOURNAME.duckdns.org/authelia
-      expiration: 1h
-      inactivity: 5m
+      domain: experimenta.cc
+      authelia_url: https://auth.experimenta.cc
+      default_redirection_url: https://experimenta.cc
+      expiration: 12h
+      inactivity: 1h
 
 regulation:
   max_retries: 3
@@ -41,12 +46,10 @@ regulation:
   ban_time: 5m
 
 storage:
-  encryption_key: REPLACE_WITH_RANDOM_SECRET_3
+  encryption_key: REPLACE_WITH_RANDOM_HEX64
   local:
     path: /config/db.sqlite3
 
 notifier:
-  # Dev-friendly: 2FA registration links are written to this file. For real email
-  # delivery, swap this for an SMTP notifier later.
   filesystem:
     filename: /config/notification.txt

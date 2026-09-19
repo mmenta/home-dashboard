@@ -1,0 +1,2 @@
+# Cloudflare API token with Zone:DNS:Edit on experimenta.cc (certbot format). Lives only on the box.
+dns_cloudflare_api_token = REPLACE_WITH_CLOUDFLARE_TOKEN

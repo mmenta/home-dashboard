@@ -1,23 +1,26 @@
-# Full public stack: dashboard + Authelia (login wall) + SWAG (TLS reverse proxy).
-# Your existing DuckDNS container keeps the DNS record pointed at your home IP;
-# SWAG gets the TLS cert via DuckDNS DNS validation.
-#
-# Run from this deploy/ folder on the server:  docker compose up -d --build
-# Secrets come from a .env file in this folder (see .env.example). They are
-# never baked into the image.
-
+# Edge stack for *.experimenta.cc: SWAG (TLS + reverse proxy), Authelia (login
+# wall for the trading dashboards), cloudflare-ddns (keeps home.experimenta.cc on
+# the WAN IP; every other name is a wildcard CNAME to it). One wildcard cert via
+# Cloudflare dns-01 — adding a site is a site-conf + nginx reload, nothing else.
 services:
-  home-dashboard:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-    container_name: home-dashboard
+  swag:
+    image: lscr.io/linuxserver/swag:latest
+    container_name: swag
+    cap_add: [NET_ADMIN]
     environment:
-      # IP of your Home Assistant VM on the LAN (Settings -> System -> Network in HA).
-      - HA_BASE_URL=http://HOME_ASSISTANT_VM_IP:8123
-      - HA_TOKEN=${HA_TOKEN}
-      - TRUST_AUTH_HEADER=true
-      - PORT=8080
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles
+      - URL=experimenta.cc
+      - SUBDOMAINS=wildcard
+      - VALIDATION=dns
+      - DNSPLUGIN=cloudflare
+      - ONLY_SUBDOMAINS=false
+    volumes:
+      - ./swag:/config
+    ports:
+      - "80:80"
+      - "443:443"
     networks: [proxy]
     restart: unless-stopped
 
@@ -31,26 +34,19 @@ services:
     networks: [proxy]
     restart: unless-stopped
 
-  swag:
-    image: lscr.io/linuxserver/swag:latest
-    container_name: swag
-    cap_add: [NET_ADMIN]
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:latest
+    container_name: cloudflare-ddns
     environment:
-      - PUID=1000
-      - PGID=1000
+      - CLOUDFLARE_API_TOKEN_FILE=/run/secrets/cf-token
+      - DOMAINS=home.experimenta.cc
+      - PROXIED=false
+      - IP6_PROVIDER=none
       - TZ=America/Los_Angeles
-      - URL=YOURNAME.duckdns.org          # <-- your DuckDNS subdomain
-      - VALIDATION=duckdns
-      - DUCKDNSTOKEN=${DUCKDNS_TOKEN}      # <-- from .env
-      - ONLY_SUBDOMAINS=false
     volumes:
-      - ./swag:/config
-    ports:
-      - "80:80"
-      - "443:443"
-    networks: [proxy]
+      - ./swag/dns-conf/cf-token:/run/secrets/cf-token:ro
     restart: unless-stopped
 
 networks:
   proxy:
-    name: proxy
+    external: true

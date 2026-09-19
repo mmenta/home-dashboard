@@ -3,3 +3,18 @@ dist
 .env
 .env.local
 *.log
+# edge-stack secrets and SWAG runtime state — live only on the box
+deploy/authelia/users_database.yml
+deploy/authelia/db.sqlite3
+deploy/authelia/notification.txt
+deploy/authelia/INITIAL_PASSWORD.txt
+deploy/swag/dns-conf/cloudflare.ini
+deploy/swag/dns-conf/cf-token
+deploy/swag/*
+!deploy/swag/nginx/
+deploy/swag/nginx/*
+!deploy/swag/nginx/no-crawl.conf
+!deploy/swag/nginx/site-confs/
+!deploy/swag/dns-conf/
+deploy/swag/dns-conf/*
+!deploy/swag/dns-conf/cloudflare.ini.example

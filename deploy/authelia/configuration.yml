@@ -23,11 +23,8 @@ authentication_backend:
 access_control:
   default_policy: deny
   rules:
-    - domain:
-        - kalshi.experimenta.cc
-        - polyview.experimenta.cc
-        - crossarb.experimenta.cc
-        - weather.experimenta.cc
+    # Only the home dashboard is gated (re-add when it is rebuilt); the apps carry their own logins.
+    - domain: home.experimenta.cc
       policy: two_factor
 
 session:

@@ -1,0 +1,27 @@
+# Jellyfin on the proxy network; SWAG reaches it at http://jellyfin:8096.
+# Config (library DB, metadata) lives on a named volume on the cache SSD and is
+# covered by the nightly backup. Media is read-only from unraid, mounted on the
+# VM at /mnt/media (see /etc/fstab) — the VM holds no media of its own.
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.experimenta.cc
+    volumes:
+      - jellyfin-config:/config
+      - /mnt/media:/media:ro
+    networks: [proxy]
+    restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  jellyfin-config:
